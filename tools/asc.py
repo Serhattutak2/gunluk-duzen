@@ -306,7 +306,11 @@ def gonder():
         st, r = api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems", "relationships": {
             "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub}},
             "appStoreVersion": {"data": {"type": "appStoreVersions", "id": ver_id}}}}})
-        if st not in (200, 201): die("Sürüm gönderime eklenemedi (eksik bilgi olabilir; Uygulama Gizliliği yayınlandı mı?)", r)
+        if st not in (200, 201):
+            for e in r.get("errors", []):
+                for k, v in (e.get("meta", {}).get("associatedErrors", {}) or {}).items():
+                    for x in v: print("  EKSİK:", k.split("/")[-2] if "/" in k else k, "->", x.get("title", ""), "|", x.get("detail", ""))
+            die("Sürüm gönderime eklenemedi", r)
     st, r = api("PATCH", f"/v1/reviewSubmissions/{sub}", {"data": {"type": "reviewSubmissions", "id": sub, "attributes": {"submitted": True}}})
     if st != 200: die("Gönderim onaylanamadı", r)
     print("APPLE İNCELEMESİNE GÖNDERİLDİ ✓  Durum:", r["data"]["attributes"].get("state"))
