@@ -679,7 +679,8 @@ function settings(){
   <section class="panel" style="gap:10px">
    ${S.sample?`<p class="note">Şu an örnek verilerle deniyorsun. <button class="link" data-act="clear">Örnekleri sil, temiz başla</button></p>`:''}
    <p class="note"><button class="link" data-act="intro">Tanıtımı tekrar göster</button></p>
-   <p class="note"><button class="link danger" data-act="reset">Tüm verileri sıfırla</button></p></section>`;
+   <p class="note"><button class="link danger" data-act="reset">Tüm verileri sıfırla</button></p></section>
+  <p class="note" style="text-align:center;padding:4px 0 8px">Alışkanlık Ağacı: Günlük Düzen · Sürüm 1.0<br>Yapımcı: <b>Serhat Tutak</b> · Sardur Technologies</p>`;
 }
 
 /* ---- Hedef ekleme / düzenleme sayfası ---- */
@@ -735,6 +736,7 @@ function renderIntro(){
     ${opts.map(o=>`<button class="${PICK.has(o.k)?'on':''}" style="--hc:var(--${o.color});--hs:var(--${o.color}-soft)" data-act="pick:${o.k}"><span class="d"></span>${o.name}</button>`).join('')}</div>
     <p class="note">Sonra Hedefler sekmesinden değiştirebilir, kendi hedeflerini ekleyebilirsin.</p></div>
    <button class="btn" style="--hc:var(--leaf)" data-act="start" ${PICK.size||S.habits.length?'':'disabled'}>${S.habits.length?'Devam et':`${PICK.size} hedefle başla`}</button>
+   <p class="note" style="text-align:center">Yapımcı: Serhat Tutak · Sardur Technologies</p>
   </div></div>`;
 }
 
