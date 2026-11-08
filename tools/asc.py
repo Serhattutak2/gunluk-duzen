@@ -300,5 +300,9 @@ def durum():
     for b in r.get("data", []): print("Build", b["attributes"].get("version"), b["attributes"].get("processingState"))
 
 if __name__ == "__main__":
+    if not KID or not ISS or "PRIVATE KEY" not in P8:
+        print("HATA: Gizli anahtarlar eksik. Depo > Settings > Secrets and variables > Actions altına")
+        print("      ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 ve IOS_TEAM_ID ekle (Miras FC'deki değerlerin aynısı).")
+        sys.exit(1)
     cmd = sys.argv[1] if len(sys.argv) > 1 else "durum"
     {"hazirlik": hazirlik, "bilgiler": bilgiler, "gonder": gonder, "durum": durum}[cmd]()
