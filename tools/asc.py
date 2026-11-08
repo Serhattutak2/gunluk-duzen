@@ -155,6 +155,10 @@ def set_app_info(app_id):
                 if "required" in d or "missing" in d:
                     for n in names:
                         if n not in attrs: attrs[n] = False; tried[n] = 0; changed = True
+                elif "Expected a BOOLEAN" in d or "Expected a STRING" in d:
+                    for n in names:
+                        v = False if "Expected a BOOLEAN" in d else "NONE"
+                        if attrs.get(n, None) != v: attrs[n] = v; changed = True
                 elif any(w in d.lower() for w in ("type", "invalid", "not a valid", "enum")):
                     for n in names:
                         if n in attrs and tried.get(n, 0) < 2:
