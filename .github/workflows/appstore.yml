@@ -1,0 +1,46 @@
+# App Store Connect işlemleri (elle tetiklenir). Actions > App Store > Run workflow
+#   hazirlik : paket kimliğini kaydeder, uygulama oluşturuldu mu kontrol eder
+#   bilgiler : açıklama, kategori, yaş, fiyat, ülkeler, ekran görüntüleri
+#   gonder   : son TestFlight build'ini Apple incelemesine gönderir
+#   durum    : sürüm ve build durumunu yazar
+name: App Store
+on:
+  workflow_dispatch:
+    inputs:
+      adim:
+        description: "Adım"
+        type: choice
+        options: [hazirlik, bilgiler, gonder, durum]
+        default: durum
+  push:
+    branches: [main]
+    paths: ['.github/workflows/appstore.yml']
+permissions:
+  contents: write
+jobs:
+  asc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KID: ${{ secrets.ASC_KEY_ID }}
+      ISS: ${{ secrets.ASC_ISSUER_ID }}
+      P8: ${{ secrets.ASC_KEY_P8 }}
+      ADIM: ${{ github.event.inputs.adim || 'hazirlik' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install --quiet pyjwt cryptography
+      - name: Çalıştır
+        run: |
+          set -o pipefail
+          python3 tools/asc.py "$ADIM" 2>&1 | tee "$RUNNER_TEMP/asc.log"
+      - name: Günlüğü yayınla
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -f "$RUNNER_TEMP/asc.log" ] || exit 0
+          cp "$RUNNER_TEMP/asc.log" "appstore-$ADIM.txt"
+          gh release view ci-logs >/dev/null 2>&1 || gh release create ci-logs --prerelease --title "CI günlükleri" --notes "Derleme günlükleri"
+          gh release upload ci-logs "appstore-$ADIM.txt" --clobber

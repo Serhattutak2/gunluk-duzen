@@ -1,0 +1,11 @@
+{
+  "appId": "com.serhattutak.gunlukduzen",
+  "appName": "Günlük Düzen",
+  "webDir": "www",
+  "backgroundColor": "#0F2419",
+  "ios": { "contentInset": "never", "backgroundColor": "#EDF2EE", "scrollEnabled": true, "limitsNavigationsToAppBoundDomains": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 600, "launchAutoHide": true, "backgroundColor": "#0F2419", "showSpinner": false },
+    "LocalNotifications": { "iconColor": "#3F9A52" }
+  }
+}

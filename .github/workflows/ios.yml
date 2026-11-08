@@ -1,0 +1,92 @@
+# Günlük Düzen iOS derlemesi (Miras FC düzeninin aynısı).
+# - Her push'ta imzasız derleme yapar (hata var mı diye kontrol).
+# - Commit mesajında [testflight] varsa ya da elle "testflight: evet" seçilirse
+#   App Store Connect API anahtarıyla imzalayıp TestFlight'a yükler.
+# Gerekli gizli anahtarlar: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8, IOS_TEAM_ID
+name: iOS
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'mobile/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "TestFlight'a yüklensin mi?"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      HAS_ASC: ${{ secrets.ASC_KEY_P8 != '' && secrets.IOS_TEAM_ID != '' && (contains(github.event.head_commit.message, '[testflight]') || github.event.inputs.testflight == 'true') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Xcode seç
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1); [ -n "$X" ] || X=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$X"; xcodebuild -version
+      - name: Uygulama dosyalarını hazırla
+        run: |
+          rm -rf mobile/www && mkdir -p mobile/www && cp -R app/. mobile/www/
+      - name: Capacitor eşitle
+        working-directory: mobile
+        run: |
+          npm ci
+          npx cap sync ios
+      - name: İmzasız derleme (kontrol)
+        if: env.HAS_ASC != 'true'
+        working-directory: mobile/ios/App
+        run: |
+          set -o pipefail
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} build | tail -40
+      - name: TestFlight'a yükle
+        if: env.HAS_ASC == 'true'
+        working-directory: mobile/ios/App
+        env:
+          TEAM: ${{ secrets.IOS_TEAM_ID }}
+          KID: ${{ secrets.ASC_KEY_ID }}
+          ISS: ${{ secrets.ASC_ISSUER_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -o pipefail
+          exec > >(tee $RUNNER_TEMP/tf.log) 2>&1
+          TEAM=$(printf '%s' "$TEAM" | LC_ALL=C tr -cd 'A-Za-z0-9'); KID=$(printf '%s' "$KID" | LC_ALL=C tr -cd 'A-Za-z0-9'); ISS=$(printf '%s' "$ISS" | LC_ALL=C tr -cd 'A-Za-z0-9-')
+          P8=$(printf '%s\n' "$P8" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -v '^$')
+          echo "Kontrol: TEAM=${#TEAM}, KEY_ID=${#KID}, ISSUER=${#ISS}, P8 satır=$(printf '%s\n' "$P8" | wc -l)"
+          mkdir -p ~/.appstoreconnect/private_keys
+          KP=~/.appstoreconnect/private_keys/AuthKey_$KID.p8
+          printf '%s\n' "$P8" > $KP
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $KP -authenticationKeyID $KID -authenticationKeyIssuerID $ISS"
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath build/AS.xcarchive archive $AUTH DEVELOPMENT_TEAM=$TEAM CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} > $RUNNER_TEMP/arch.log 2>&1 || { grep -E 'error|Error' $RUNNER_TEMP/arch.log | tail -40; tail -60 $RUNNER_TEMP/arch.log; exit 1; }
+          tail -15 $RUNNER_TEMP/arch.log
+          cat > as.plist <<PL
+          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>$TEAM</string>
+          <key>signingStyle</key><string>automatic</string><key>uploadSymbols</key><true/></dict></plist>
+          PL
+          xcodebuild -exportArchive -archivePath build/AS.xcarchive -exportOptionsPlist as.plist -exportPath asout $AUTH | tail -30
+          ls -la asout
+          xcrun altool --upload-app -f asout/*.ipa -t ios --apiKey "$KID" --apiIssuer "$ISS"
+      - name: Günlüğü yayınla (gizli bilgiler silinmiş)
+        if: always() && env.HAS_ASC == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KID: ${{ secrets.ASC_KEY_ID }}
+          ISS: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          f=$RUNNER_TEMP/tf.log; [ -f "$f" ] || exit 0
+          ISS=$(printf '%s' "$ISS" | LC_ALL=C tr -cd 'A-Za-z0-9-'); KID=$(printf '%s' "$KID" | LC_ALL=C tr -cd 'A-Za-z0-9')
+          sed -i '' -e "s/$ISS/[ISSUER]/g" -e "s/$KID/[KEYID]/g" -e '/PRIVATE KEY/d' "$f" || true
+          cp "$f" testflight-log.txt
+          gh release view ci-logs >/dev/null 2>&1 || gh release create ci-logs --prerelease --title "CI günlükleri" --notes "Derleme günlükleri"
+          gh release upload ci-logs testflight-log.txt --clobber

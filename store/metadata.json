@@ -1,0 +1,21 @@
+{
+ "supportUrl": "https://serhattutak2.github.io/gunluk-duzen/destek.html",
+ "marketingUrl": "https://serhattutak2.github.io/gunluk-duzen/",
+ "privacyUrl": "https://serhattutak2.github.io/gunluk-duzen/gizlilik.html",
+ "copyright": "2026 Sardur Technologies",
+ "primaryCategory": "PRODUCTIVITY",
+ "secondaryCategory": "HEALTH_AND_FITNESS",
+ "reviewNotes": "Günlük Düzen bir alışkanlık takip uygulamasıdır. Hesap/giriş gerekmez; tüm veriler cihazda saklanır, ağ isteği yapılmaz. İlk açılışta tanıtım ekranından hedef seçip 'Başla'ya dokunun. Bildirimler yalnızca kullanıcının ayarladığı hatırlatmalar ve sayaç bitişi içindir.\n\nGünlük Düzen is a habit tracker. No login required; all data stays on device, no network requests. On first launch pick goals and tap 'Başla'. Notifications are only user-set reminders and timer completion.",
+ "tr": {
+  "subtitle": "Hedeflerinle ağacını büyüt",
+  "keywords": "alışkanlık,hedef,su içme,kitap,rutin,disiplin,motivasyon,odak,günlük,takip,seri,namaz,spor,ders",
+  "promotionalText": "Su iç, kitap oku, ders çalış: yaptıkça XP kazan, ağacın büyüsün, bahçende çiçekler açsın. Günün görevi, seriler, rozetler ve odak modu seni bekliyor.",
+  "description": "Hayatını düzene sokmanın en keyifli yolu: hedeflerini yaptıkça ağacın büyüsün.\n\nGünlük Düzen; su içmek, kitap okumak, ders çalışmak, spor, namaz ya da kendi koyduğun her hedefi takip etmeni sağlar. Her adım XP kazandırır, seviye atladıkça bahçendeki ağaç tohumdan asırlık çınara dönüşür.\n\nNASIL ÇALIŞIR\n• Hedeflerini seç: hazır hedeflerden başla ya da kendininkini ekle.\n• Üç takip türü: Sayı (8 bardak su, 5 vakit namaz), Süre (60 dk kitap) ve Yaptım/Yapmadım (şekersiz gün).\n• Yaptıkça işaretle, XP kazan, seviye atla.\n\nBÜYÜYEN BAHÇEN\n• Ağacın seviye atladıkça büyür; çalışmadığın gün yaprakları sararır.\n• Bitirdiğin her hedef bahçede bir çiçek açtırır.\n• Mükemmel günlerde ağacına elma eklenir, bahçene kuşlar gelir.\n• Gökyüzü günün saatine göre değişir: gün doğumu, öğle, gün batımı, yıldızlı gece.\n\nMOTİVASYON\n• Günün görevi: her gün yeni bir küçük görev ve bonus XP.\n• Seriler: kaç gündür aralıksız devam ettiğini gör, zinciri kırma.\n• 15 rozet: Erken Kalkan, Kitap Kurdu, Kusursuz Hafta ve dahası.\n\nODAK MODU\nKitap ve ders gibi süreli hedeflerde tek dokunuşla tam ekran geri sayıma geç. Süre dolunca bildirim gelir.\n\nHATIRLATMALAR\nHer hedef için ayrı hatırlatma saati ve hedeflerin bitmediyse akşam kontrolü.\n\nGELİŞİMİN\nSon 5 haftanın takvimi, haftalık tablo, en iyi seri, toplam süre ve başarı yüzdesi.\n\nUnuttuğun bir şey mi var? Son 7 güne geri dönüp kaydını düzeltebilirsin.\n\nGİZLİLİK\nHesap yok, reklam yok. Tüm verilerin yalnızca senin telefonunda saklanır."
+ },
+ "en": {
+  "subtitle": "Grow a tree with your habits",
+  "keywords": "habit,tracker,goals,water,reading,routine,discipline,focus,streak,daily,planner",
+  "promotionalText": "Drink water, read, study: earn XP, grow your tree and watch flowers bloom. Daily quests, streaks, badges and focus mode.",
+  "description": "Grow a tree by building better habits.\n\nTrack water, reading, study, workouts or any goal you set. Every step earns XP; level up and watch your garden tree grow from a seed into an ancient oak. Finished goals bloom as flowers, perfect days bring apples and birds.\n\n• Count, timer and yes/no goals\n• Daily quest with bonus XP\n• Streaks and 15 badges\n• Full-screen focus mode with timer notifications\n• Per-goal reminders and an evening check-in\n• 5-week calendar and stats\nNo account, no ads. Your data stays on your phone."
+ }
+}
