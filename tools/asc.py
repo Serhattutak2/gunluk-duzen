@@ -124,7 +124,7 @@ def set_app_info(app_id):
     st, r = api("PATCH", f"/v1/appInfos/{info['id']}", {"data": {"type": "appInfos", "id": info["id"], "relationships": {
         "primaryCategory": {"data": {"type": "appCategories", "id": META["primaryCategory"]}},
         "secondaryCategory": {"data": {"type": "appCategories", "id": META["secondaryCategory"]}}}}})
-    step("Kategori (Verimlilik + Sağlık ve Fitness)", st == 200, r)
+    step("Kategori (Verimlilik + Yaşam Tarzı)", st == 200, r)
     st, r = api("GET", f"/v1/appInfos/{info['id']}/appInfoLocalizations?limit=50")
     for l in r.get("data", []):
         loc = l["attributes"]["locale"]
