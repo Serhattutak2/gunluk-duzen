@@ -38,6 +38,14 @@ jobs:
         run: |
           npm ci
           npx cap sync ios
+      - name: Swift paketlerini indir (geçici hatalarda tekrar dener)
+        working-directory: mobile/ios/App
+        run: |
+          for i in 1 2 3 4 5 6; do
+            xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App -derivedDataPath build > $RUNNER_TEMP/spm.log 2>&1 && { echo "Paketler hazır (deneme $i)"; exit 0; }
+            echo "Deneme $i başarısız, bekleniyor..."; grep -E 'error|failed' $RUNNER_TEMP/spm.log | head -3; sleep $((i*20))
+          done
+          exit 1
       - name: İmzasız derleme (kontrol)
         if: env.HAS_ASC != 'true'
         working-directory: mobile/ios/App
@@ -66,7 +74,7 @@ jobs:
           printf '%s\n' "$P8" > $KP
           AUTH="-allowProvisioningUpdates -authenticationKeyPath $KP -authenticationKeyID $KID -authenticationKeyIssuerID $ISS"
           xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
-            -archivePath build/AS.xcarchive archive $AUTH DEVELOPMENT_TEAM=$TEAM CODE_SIGN_STYLE=Automatic \
+            -derivedDataPath build -archivePath build/AS.xcarchive archive $AUTH DEVELOPMENT_TEAM=$TEAM CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} > $RUNNER_TEMP/arch.log 2>&1 || { grep -E 'error|Error' $RUNNER_TEMP/arch.log | tail -40; tail -60 $RUNNER_TEMP/arch.log; exit 1; }
           tail -15 $RUNNER_TEMP/arch.log
           cat > as.plist <<PL
