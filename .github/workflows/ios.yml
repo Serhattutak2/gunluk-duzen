@@ -38,6 +38,13 @@ jobs:
         run: |
           npm ci
           npx cap sync ios
+      - name: Swift paket önbelleği
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: spm-${{ hashFiles('mobile/package-lock.json') }}
       - name: Swift paketlerini indir (geçici hatalarda tekrar dener)
         working-directory: mobile/ios/App
         run: |
