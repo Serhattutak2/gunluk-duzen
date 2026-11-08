@@ -140,12 +140,14 @@ def set_app_info(app_id):
                 "healthOrWellnessTopics", "messagingAndChat", "parentalControls", "userGeneratedContent", "isAdvertising",
                 "isAgeAssurance", "isHealthOrWellnessTopics", "isLootBox", "isMessagingAndChat", "isParentalControls",
                 "isUserGeneratedContent", "isUnrestrictedWebAccess", "isGambling"}
-        SKIP = {"kidsAgeBand", "ageRatingOverride", "ageRatingOverrideV2", "koreaAgeRatingOverride", "developerAgeRatingInfoUrl"}
-        attrs = {k: (False if k in BOOL or isinstance(v, bool) else "NONE") for k, v in ad["attributes"].items() if k not in SKIP}
+        SKIP = {"kidsAgeBand", "ageRatingOverride", "ageRatingOverrideV2", "koreaAgeRatingOverride", "developerAgeRatingInfoUrl", "gracRatingClassificationNumber"}
+        attrs = {k: (False if k in BOOL or isinstance(v, bool) else "NONE") for k, v in ad["attributes"].items() if k not in SKIP and "korea" not in k.lower() and "grac" not in k.lower()}
         for _ in range(6):
             st, r = api("PATCH", f"/v1/ageRatingDeclarations/{ad['id']}", {"data": {"type": "ageRatingDeclarations", "id": ad["id"], "attributes": attrs}})
             if st == 200: break
+            import re
             bad = [e.get("source", {}).get("pointer", "").split("/")[-1] for e in r.get("errors", [])]
+            bad += [n for e in r.get("errors", []) for n in re.findall(r"'([A-Za-z]+)'", e.get("detail", ""))]
             bad = [b for b in bad if b in attrs]
             if not bad: break
             for b in bad: attrs.pop(b, None)
