@@ -331,7 +331,11 @@ def gonder():
                     for x in v: print("  EKSİK:", k.split("/")[-2] if "/" in k else k, "->", x.get("title", ""), "|", x.get("detail", ""))
             die("Sürüm gönderime eklenemedi", r)
     st, r = api("PATCH", f"/v1/reviewSubmissions/{sub}", {"data": {"type": "reviewSubmissions", "id": sub, "attributes": {"submitted": True}}})
-    if st != 200: die("Gönderim onaylanamadı", r)
+    if st != 200:
+        for e in r.get("errors", []):
+            for k, v in (e.get("meta", {}).get("associatedErrors", {}) or {}).items():
+                for x in v: print("  EKSİK:", k, "->", x.get("code", ""), "|", x.get("detail", ""))
+        die("Gönderim onaylanamadı", r)
     print("APPLE İNCELEMESİNE GÖNDERİLDİ ✓  Durum:", r["data"]["attributes"].get("state"))
 
 def durum():
