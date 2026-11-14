@@ -1,5 +1,6 @@
 // Uygulama ile widget arasında paylaşılan veri, Siri/widget komutu ve canlı etkinlik tanımı.
 import Foundation
+import Security
 import SwiftUI
 import WidgetKit
 #if canImport(AppIntents)
@@ -69,12 +70,45 @@ struct BahceSnapshot: Codable {
                  BahceHabit(name: "Ders", pct: 1, color: "#1F9C63")])
 }
 
+/// Uygulama ile widget arasında ortak Keychain üzerinden veri paylaşımı
+/// (ek bir Apple kaydı gerektirmez).
+enum SharedStore {
+    static var accessGroup: String? {
+        guard let p = Bundle.main.object(forInfoDictionaryKey: "AppIdentifierPrefix") as? String,
+              !p.isEmpty, !p.contains("$") else { return nil }
+        return p + "com.serhattutak.gunlukduzen.shared"
+    }
+
+    private static func base(_ key: String) -> [String: Any] {
+        var q: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                kSecAttrService as String: "gunlukduzen",
+                                kSecAttrAccount as String: key]
+        if let g = accessGroup { q[kSecAttrAccessGroup as String] = g }
+        return q
+    }
+
+    static func data(_ key: String) -> Data? {
+        var q = base(key)
+        q[kSecReturnData as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        var out: AnyObject?
+        return SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess ? out as? Data : nil
+    }
+
+    static func set(_ key: String, _ d: Data?) {
+        let q = base(key)
+        SecItemDelete(q as CFDictionary)
+        guard let d = d else { return }
+        var a = q
+        a[kSecValueData as String] = d
+        a[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        SecItemAdd(a as CFDictionary, nil)
+    }
+}
+
 enum Bahce {
-    static let group = "group.com.serhattutak.gunlukduzen"
     static let snapKey = "snapshot"
     static let pendingKey = "pendingWater"
-
-    static var defaults: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
 
     static func todayKey() -> String {
         let f = DateFormatter()
@@ -85,19 +119,20 @@ enum Bahce {
     }
 
     static func loadSnapshot() -> BahceSnapshot? {
-        guard let d = defaults.data(forKey: snapKey) else { return nil }
+        guard let d = SharedStore.data(snapKey) else { return nil }
         return try? JSONDecoder().decode(BahceSnapshot.self, from: d)
     }
 
     static func saveSnapshot(_ s: BahceSnapshot) {
-        if let d = try? JSONEncoder().encode(s) { defaults.set(d, forKey: snapKey) }
+        if let d = try? JSONEncoder().encode(s) { SharedStore.set(snapKey, d) }
     }
 
     static func pending() -> [String: Int] {
-        (defaults.dictionary(forKey: pendingKey) as? [String: Int]) ?? [:]
+        guard let d = SharedStore.data(pendingKey) else { return [:] }
+        return (try? JSONDecoder().decode([String: Int].self, from: d)) ?? [:]
     }
 
-    static func clearPending() { defaults.removeObject(forKey: pendingKey) }
+    static func clearPending() { SharedStore.set(pendingKey, nil) }
 
     /// Widget ya da Siri'den bir bardak su ekler. Uygulama açıldığında kayda işlenir.
     @discardableResult
@@ -105,7 +140,7 @@ enum Bahce {
         let day = todayKey()
         var p = pending()
         p[day, default: 0] += 1
-        defaults.set(p, forKey: pendingKey)
+        SharedStore.set(pendingKey, try? JSONEncoder().encode(p))
         guard var s = loadSnapshot()?.forToday() else { return nil }
         if s.waterId != nil {
             let wasDone = s.waterTarget > 0 && s.water >= s.waterTarget

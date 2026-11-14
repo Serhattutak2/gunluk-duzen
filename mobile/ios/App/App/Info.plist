@@ -74,5 +74,7 @@
 	<string>İçtiğin her bardak suyu Apple Sağlık'a kaydetmek için.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>AppIdentifierPrefix</key>
+	<string>$(AppIdentifierPrefix)</string>
 </dict>
 </plist>
