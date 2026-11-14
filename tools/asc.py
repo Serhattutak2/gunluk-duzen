@@ -330,6 +330,13 @@ def gonder():
                 for k, v in (e.get("meta", {}).get("associatedErrors", {}) or {}).items():
                     for x in v: print("  EKSİK:", k.split("/")[-2] if "/" in k else k, "->", x.get("title", ""), "|", x.get("detail", ""))
             die("Sürüm gönderime eklenemedi", r)
+    st, r = api("GET", f"/v1/reviewSubmissions/{sub}/items?limit=50")
+    for it in r.get("data", []):
+        a = it["attributes"]
+        print("  Gönderim öğesi:", a.get("state"), "resolved=", a.get("resolved"))
+        if a.get("state") in ("REJECTED", "UNRESOLVED_ISSUES") or a.get("resolved") is False:
+            st2, r2 = api("PATCH", f"/v1/reviewSubmissionItems/{it['id']}", {"data": {"type": "reviewSubmissionItems", "id": it["id"], "attributes": {"resolved": True}}})
+            print("  Sorun çözüldü olarak işaretlendi" if st2 == 200 else "  İşaretlenemedi: " + err(r2))
     st, r = api("PATCH", f"/v1/reviewSubmissions/{sub}", {"data": {"type": "reviewSubmissions", "id": sub, "attributes": {"submitted": True}}})
     if st != 200:
         for e in r.get("errors", []):
