@@ -323,7 +323,9 @@ def gonder():
         st, r = api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems", "relationships": {
             "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub}},
             "appStoreVersion": {"data": {"type": "appStoreVersions", "id": ver_id}}}}})
-        if st not in (200, 201):
+        if st not in (200, 201) and "does not allow adding" in err(r):
+            print("Önceki gönderim yeniden açılıyor (sürüm zaten içinde)")
+        elif st not in (200, 201):
             for e in r.get("errors", []):
                 for k, v in (e.get("meta", {}).get("associatedErrors", {}) or {}).items():
                     for x in v: print("  EKSİK:", k.split("/")[-2] if "/" in k else k, "->", x.get("title", ""), "|", x.get("detail", ""))
