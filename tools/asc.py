@@ -343,6 +343,15 @@ def durum():
     if not a: print("Uygulama App Store Connect'te yok."); return
     st, r = api("GET", f"/v1/apps/{a['id']}/appStoreVersions?limit=5")
     for v in r.get("data", []): print("Sürüm", v["attributes"]["versionString"], v["attributes"]["appStoreState"])
+    for v in r.get("data", []):
+        st2, r2 = api("GET", f"/v1/appStoreVersions/{v['id']}/appStoreVersionLocalizations?limit=10")
+        for l in r2.get("data", []):
+            st3, r3 = api("GET", f"/v1/appStoreVersionLocalizations/{l['id']}/appScreenshotSets?include=appScreenshots&limit=10")
+            for inc in r3.get("included", []):
+                ad = inc["attributes"].get("assetDeliveryState") or {}
+                print("Görsel", l["attributes"]["locale"], inc["attributes"].get("fileName"), ad.get("state"), [e.get("description") for e in ad.get("errors") or []])
+        st2, r2 = api("GET", f"/v1/appStoreVersions/{v['id']}/build")
+        if r2.get("data"): print("Bağlı build", r2["data"]["attributes"].get("version"), r2["data"]["attributes"].get("processingState"))
     st, r = api("GET", f"/v1/builds?filter[app]={a['id']}&sort=-uploadedDate&limit=5")
     for b in r.get("data", []): print("Build", b["attributes"].get("version"), b["attributes"].get("processingState"))
 
