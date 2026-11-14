@@ -38,6 +38,10 @@ jobs:
         run: |
           npm ci
           npx cap sync ios
+      - name: Widget ve iPhone özelliklerini projeye ekle
+        run: |
+          gem list -i xcodeproj >/dev/null 2>&1 || sudo gem install xcodeproj --no-document
+          ruby tools/ios_widget.rb
       - name: Swift paket önbelleği
         uses: actions/cache@v4
         with:

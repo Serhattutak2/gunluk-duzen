@@ -88,6 +88,23 @@ def hazirlik():
         st, r = api("POST", "/v1/bundleIds", {"data": {"type": "bundleIds",
             "attributes": {"identifier": BUNDLE, "name": "Gunluk Duzen", "platform": "IOS"}}})
         step("Paket kimliği kaydedildi: " + BUNDLE, st in (200, 201), r)
+    ids = {}
+    for bid, nm in ((BUNDLE, "Gunluk Duzen"), (BUNDLE + ".widget", "Gunluk Duzen Widget")):
+        st, r = api("GET", f"/v1/bundleIds?filter[identifier]={bid}&limit=5")
+        got = [b for b in r.get("data", []) if b["attributes"]["identifier"] == bid]
+        if got: ids[bid] = got[0]["id"]; continue
+        st, r = api("POST", "/v1/bundleIds", {"data": {"type": "bundleIds", "attributes": {"identifier": bid, "name": nm, "platform": "IOS"}}})
+        step("Paket kimliği kaydedildi: " + bid, st in (200, 201), r)
+        if st in (200, 201): ids[bid] = r["data"]["id"]
+    for bid, caps in ((BUNDLE, ["APP_GROUPS", "HEALTHKIT"]), (BUNDLE + ".widget", ["APP_GROUPS"])):
+        if bid not in ids: continue
+        st, r = api("GET", f"/v1/bundleIds/{ids[bid]}/bundleIdCapabilities?limit=50")
+        have = {c["attributes"]["capabilityType"] for c in r.get("data", [])}
+        for cap in caps:
+            if cap in have: print(f"  ✓ {bid}: {cap} zaten açık"); continue
+            st, r = api("POST", "/v1/bundleIdCapabilities", {"data": {"type": "bundleIdCapabilities", "attributes": {"capabilityType": cap},
+                "relationships": {"bundleId": {"data": {"type": "bundleIds", "id": ids[bid]}}}}})
+            step(f"{bid}: {cap} açıldı", st in (200, 201), r)
     a = find_app()
     print("App Store Connect uygulaması:", "VAR (" + a["attributes"]["name"] + ")" if a else "YOK — App Store Connect'te Yeni Uygulama oluştur ve bu paket kimliğini seç.")
 

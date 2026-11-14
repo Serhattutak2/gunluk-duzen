@@ -68,5 +68,11 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>tr</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Adım hedefini Apple Sağlık'taki günlük adım sayınla otomatik doldurmak için.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>İçtiğin her bardak suyu Apple Sağlık'a kaydetmek için.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

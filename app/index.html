@@ -295,6 +295,8 @@ button{cursor:pointer}
 .pick button{border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:9px 14px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px}
 .pick button.on{border-color:var(--hc);background:var(--hs);color:var(--fg)}
 .pick button .d{width:10px;height:10px;border-radius:50%;background:var(--hc)}
+.feat{display:flex;flex-direction:column;gap:2px;padding-top:10px;border-top:1px solid var(--line)}
+.feat b{font-size:15px}.feat span{font-size:13px;color:var(--muted);line-height:1.45}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -406,7 +408,7 @@ norm();
 let saveT=null;
 const save=()=>{S.savedAt=Date.now();const j=JSON.stringify(S);try{localStorage.setItem(KEY,j)}catch(e){}
   const p=plug('Preferences');if(p){try{p.set({key:KEY,value:j}).catch(()=>{})}catch(e){}}
-  clearTimeout(saveT);saveT=setTimeout(scheduleReminders,900)};
+  clearTimeout(saveT);saveT=setTimeout(()=>{scheduleReminders();widgetSync()},700)};
 const day=k=>S.days[k]||(S.days[k]={});
 const H=id=>S.habits.find(h=>h.id===id);
 const hv=h=>`--hc:var(--${h.color});--hs:var(--${h.color}-soft)`;
@@ -675,6 +677,12 @@ function settings(){
     <input class="inp" id="ev-time" type="time" value="${S.evening.time}" style="width:auto;padding:8px 10px" ${S.evening.on?'':'disabled'}>
     <button class="chip" data-act="evtog" style="${S.evening.on?'background:var(--leaf);color:#fff':''}">${S.evening.on?'Açık':'Kapalı'}</button></div>
    ${notifState==='denied'?'<p class="note">Bildirim izni kapalı. Açmak için: iPhone Ayarları › Günlük Düzen › Bildirimler.</p>':''}</section>
+  ${NATIVE?`<section class="panel"><div class="title"><h2>iPhone özellikleri</h2><p>Uygulamayı açmadan da ilerle</p></div>
+   <div class="set" style="border:0;padding:0"><div class="set-name"><b>Apple Sağlık</b><small>Her bardak su Sağlık'a kaydedilir, “adım” birimli hedefler Sağlık'tan otomatik dolar</small></div>
+    <button class="chip" data-act="healthtog" style="${S.health?'background:var(--leaf);color:#fff':''}">${S.health?'Açık':'Kapalı'}</button></div>
+   <div class="feat"><b>Ana ekran widget'ı</b><span>Ana ekranda boş bir yere basılı tut › sol üstte <b>+</b> › <b>Günlük Düzen</b>. Ağacını görür, widget'taki damla ile uygulamayı açmadan su eklersin. Kilit ekranına da eklenebilir.</span></div>
+   <div class="feat"><b>Kilit ekranında sayaç</b><span>Kitap ya da ders sayacı çalışırken kalan süre kilit ekranında ve Dynamic Island'da görünür.</span></div>
+   <div class="feat"><b>Siri</b><span>“<b>Günlük Düzen su ekle</b>” de, bardağın eklensin. Kestirmeler uygulamasında da var.</span></div></section>`:''}
   <section class="panel"><div class="field"><label for="s-name">Adın</label><input class="inp" id="s-name" maxlength="20" placeholder="İsteğe bağlı" value="${esc(S.name||'')}"></div></section>
   <section class="panel" style="gap:10px">
    ${S.sample?`<p class="note">Şu an örnek verilerle deniyorsun. <button class="link" data-act="clear">Örnekleri sil, temiz başla</button></p>`:''}
@@ -730,7 +738,8 @@ function renderIntro(){
    <div class="steps">
     <div><i>1</i><span><b>Hedeflerini seç.</b> Su, kitap, ders ya da kendi koyduğun her şey.</span></div>
     <div><i>2</i><span><b>Yaptıkça işaretle.</b> Her adım XP kazandırır, her gün yeni bir görev seni bekler.</span></div>
-    <div><i>3</i><span><b>Ağacını büyüt.</b> XP ile ağaç büyür, bitirdiğin hedefler bahçede çiçek açar.</span></div></div>
+    <div><i>3</i><span><b>Ağacını büyüt.</b> XP ile ağaç büyür, bitirdiğin hedefler bahçede çiçek açar.</span></div>
+    ${NATIVE?'<div><i>4</i><span><b>Ana ekrana taşı.</b> Widget ile ağacın hep gözünün önünde, Siri ile “su ekle” demen yeter.</span></div>':''}</div>
    <div class="field"><label for="u-name">Sana nasıl hitap edelim?</label><input class="inp" id="u-name" maxlength="20" placeholder="Adın (isteğe bağlı)" value="${esc(S.name||'')}" autocomplete="given-name"></div>
    <div class="field"><label>Hangi hedeflerle başlamak istersin?</label><div class="pick">
     ${opts.map(o=>`<button class="${PICK.has(o.k)?'on':''}" style="--hc:var(--${o.color});--hs:var(--${o.color}-soft)" data-act="pick:${o.k}"><span class="d"></span>${o.name}</button>`).join('')}</div>
@@ -777,12 +786,46 @@ async function scheduleReminders(){
   try{const p=await ln.getPending();const c=p.notifications.filter(n=>n.id<9000).map(n=>({id:n.id}));if(c.length)await ln.cancel({notifications:c});if(list.length)await ln.schedule({notifications:list})}catch(e){}
 }
 async function timerNotif(){
+  liveSync();
   const ln=plug('LocalNotifications');if(!ln)return;
   try{await ln.cancel({notifications:[{id:9001}]})}catch(e){}
   if(!S.running)return;const h=H(S.running.habit);if(!h)return;
   const left=h.target*60-val(todayKey(),h);if(left<=5)return;
   if(!(await notifPerm(false)))return;
   try{await ln.schedule({notifications:[{id:9001,title:`${h.name} hedefin tamam! 🎉`,body:`${h.target} dakikayı doldurdun. Uygulamaya dönüp XP'ni topla.`,schedule:{at:new Date(Date.now()+left*1000),allowWhileIdle:true}}]})}catch(e){}
+}
+
+/* ---- iPhone özellikleri: widget, canlı sayaç, Apple Sağlık ---- */
+const HEX={water:'#2F7FD8',read:'#E07B1F',study:'#1F9C63',c1:'#E0447A',c2:'#139BA3',c3:'#5262E0',c4:'#D63C33',c5:'#C09000',c6:'#56697A'};
+const waterHabit=()=>H('water')||S.habits.find(h=>h.type==='count'&&/bardak|su\b|^su$/i.test((h.unit||'')+' '+h.name));
+const stepHabits=()=>S.habits.filter(h=>h.type==='count'&&/adım|adim|step/i.test(h.unit||''));
+function widgetSync(){
+  const b=plug('Bahce');if(!b)return;
+  const k=todayKey(),L=levelInfo(totalXP()),wh=waterHabit();
+  const snap={date:k,name:S.name||'',level:Math.min(L.n,10),title:L.title,xp:L.xp,xpFrom:L.from,xpTo:L.to,
+    streak:Math.max(0,...S.habits.map(streak)),done:doneCount(k),total:S.habits.length,
+    waterId:wh?wh.id:null,water:wh?val(k,wh):0,waterTarget:wh?wh.target:0,
+    habits:S.habits.slice(0,6).map(h=>({name:h.name,pct:pct(k,h),color:HEX[h.color]||'#3F9A52',isWater:!!wh&&h.id===wh.id}))};
+  try{b.sync({json:JSON.stringify(snap)}).catch(()=>{})}catch(e){}
+}
+async function widgetPull(){
+  const b=plug('Bahce');if(!b)return;
+  try{const r=await b.pull();const w=(r&&r.water)||{},wh=waterHabit();let n=0;
+    if(wh)for(const [k,c] of Object.entries(w)){const d=day(k);d[wh.id]=Math.min(wh.target<=12?wh.target:wh.target*5,(d[wh.id]||0)+(+c||0));n+=+c||0}
+    if(n){if(!F&&!FOCUS)render();evaluate(false);toast(`Widget'tan ${n} bardak su eklendi`)}}catch(e){}
+}
+function healthWater(n){if(!S.health||n<=0)return;const b=plug('Bahce');if(!b)return;for(let i=0;i<n;i++)try{b.healthAddWater({ml:250}).catch(()=>{})}catch(e){}}
+async function healthStepsSync(){
+  if(!S.health)return;const b=plug('Bahce'),hs=stepHabits();if(!b||!hs.length)return;
+  try{const r=await b.healthSteps();const n=Math.round((r&&r.steps)||0);const d=day(todayKey());let ch=false;
+    hs.forEach(h=>{if(n>(d[h.id]||0)){d[h.id]=n;ch=true}});if(ch){if(!F&&!FOCUS)render();evaluate(false)}}catch(e){}
+}
+async function liveSync(){
+  const b=plug('Bahce');if(!b)return;
+  try{if(!S.running){await b.stopFocus();return}
+    const h=H(S.running.habit);if(!h)return;const left=h.target*60-val(todayKey(),h);
+    if(left<=5){await b.stopFocus();return}
+    await b.startFocus({name:h.name,color:HEX[h.color]||'#3F9A52',start:Date.now(),end:Date.now()+left*1000,target:h.target,level:Math.min(levelInfo(totalXP()).n,10)})}catch(e){}
 }
 
 /* ---- Ana çizim ---- */
@@ -889,7 +932,7 @@ document.addEventListener('click',e=>{
   pt=[e.clientX,e.clientY];
   const tb=e.target.closest('[data-tab]');if(tb){S.tab=tb.dataset.tab;if(S.tab!=='today')VK=null;save();render();scrollTo(0,0);last=snap();return}
   const cup=e.target.closest('[data-cup]');
-  if(cup){const [id,i]=cup.dataset.cup.split(':'),d=day(vk()),n=+i;d[id]=(d[id]||0)===n+1?n:n+1;render();evaluate(true);return}
+  if(cup){const [id,i]=cup.dataset.cup.split(':'),d=day(vk()),n=+i,was=d[id]||0;d[id]=was===n+1?n:n+1;const wh=waterHabit();if(wh&&wh.id===id&&isToday(vk()))healthWater(d[id]-was);render();evaluate(true);return}
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const [a,arg]=b.dataset.act.split(':'),k=vk(),d=day(k),h=arg&&H(arg);
   if(a==='close'){if(b.classList.contains('ov')&&e.target!==b)return;closeOv();return}
@@ -909,6 +952,8 @@ document.addEventListener('click',e=>{
   if(a==='fup'||a==='fdn'){const st=F.type==='time'?5:F.target>=1000?500:F.target>=100?10:F.target>=20?5:1;F.target=Math.max(F.type==='time'?5:1,Math.min(F.type==='time'?480:1000000,F.target+(a==='fup'?st:-st)));renderSheet();return}
   if(a==='fc'){F.color=arg;renderSheet();return}
   if(a==='remclr'){F.remind='';renderSheet();return}
+  if(a==='healthtog'){if(S.health){S.health=false;save();render();return}
+    const b=plug('Bahce');if(!b)return;b.healthAuth().then(r=>{S.health=!!(r&&r.ok);save();render();if(S.health){toast('Apple Sağlık bağlandı');healthStepsSync()}else toast('Sağlık izni verilmedi')}).catch(()=>{});return}
   if(a==='evtog'){S.evening.on=!S.evening.on;if(S.evening.on)notifPerm(true).then(()=>render());save();render();return}
   if(a==='saveh'){
     const name=F.name.trim();if(!name){toast('Önce hedefe bir ad ver');const i=document.getElementById('f-name');if(i)i.focus();return}
@@ -926,7 +971,7 @@ document.addEventListener('click',e=>{
   if(a==='focus'){openFocus(h.id);return}
   if(a==='fclose'){stopRun();save();closeFocus();evaluate(false);return}
   // kayıt
-  if(a==='inc'){const st=h.target<=12?1:stepOf(h);d[h.id]=Math.min(h.target<=12?h.target:h.target*5,(d[h.id]||0)+st)}
+  if(a==='inc'){const st=h.target<=12?1:stepOf(h),was=d[h.id]||0;d[h.id]=Math.min(h.target<=12?h.target:h.target*5,was+st);const wh=waterHabit();if(wh&&wh.id===h.id&&isToday(k))healthWater(d[h.id]-was)}
   else if(a==='dec'){const st=h.target<=12?1:stepOf(h);d[h.id]=Math.max(0,(d[h.id]||0)-st)}
   else if(a==='chk')d[h.id]=d[h.id]?0:1;
   else if(a==='tmr'){const was=S.running&&S.running.habit===h.id;stopRun();if(!was){S.running={habit:h.id,start:Date.now()};earlyBadge();setTimeout(timerNotif,50);notifPerm(true)}if(FOCUS)renderFocus()}
@@ -943,8 +988,9 @@ async function boot(){
   norm();checkBadges();last=snap();save();render();
   if(!S.onboarded)showIntro();
   notifPerm(false).then(()=>{if(S.tab==='set')render()});
+  widgetPull();healthStepsSync();widgetSync();
 }
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!F&&!FOCUS)render();last=snap();scheduleReminders()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!F&&!FOCUS)render();last=snap();scheduleReminders();widgetPull();healthStepsSync()}});
 boot();
 </script>
 
