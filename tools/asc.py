@@ -345,6 +345,29 @@ def gonder():
         die("Gönderim onaylanamadı", r)
     print("APPLE İNCELEMESİNE GÖNDERİLDİ ✓  Durum:", r["data"]["attributes"].get("state"))
 
+def tfgrup():
+    app_id = need_app()
+    st, r = api("GET", f"/v1/apps/{app_id}/betaGroups?limit=20")
+    grp = next((g for g in r.get("data", []) if g["attributes"].get("isInternalGroup")), None)
+    if not grp:
+        st, r = api("POST", "/v1/betaGroups", {"data": {"type": "betaGroups", "attributes": {"name": "Ekip", "isInternalGroup": True, "hasAccessToAllBuilds": True},
+            "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})
+        if st not in (200, 201): die("İç test grubu oluşturulamadı", r)
+        grp = r["data"]
+    print("İç test grubu:", grp["attributes"]["name"])
+    st, r = api("GET", "/v1/users?limit=20")
+    users = r.get("data", [])
+    if not users: die("Hesap kullanıcıları okunamadı", r)
+    st, r = api("GET", f"/v1/betaGroups/{grp['id']}/betaTesters?limit=50")
+    have = {t["attributes"].get("email", "").lower() for t in r.get("data", [])}
+    for u in users:
+        a = u["attributes"]; mail = (a.get("username") or "").lower()
+        if not mail or mail in have: print("  ✓ zaten testçi"); continue
+        st, r = api("POST", "/v1/betaTesters", {"data": {"type": "betaTesters",
+            "attributes": {"email": mail, "firstName": a.get("firstName", ""), "lastName": a.get("lastName", "")},
+            "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": grp["id"]}]}}}})
+        step(f"Testçi eklendi: {a.get('firstName','')} {a.get('lastName','')}", st in (200, 201), r)
+
 def durum():
     a = find_app()
     if not a: print("Uygulama App Store Connect'te yok."); return
@@ -368,4 +391,4 @@ if __name__ == "__main__":
         print("      ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 ve IOS_TEAM_ID ekle (Miras FC'deki değerlerin aynısı).")
         sys.exit(1)
     cmd = sys.argv[1] if len(sys.argv) > 1 else "durum"
-    {"hazirlik": hazirlik, "bilgiler": bilgiler, "gonder": gonder, "durum": durum}[cmd]()
+    {"tfgrup": tfgrup, "hazirlik": hazirlik, "bilgiler": bilgiler, "gonder": gonder, "durum": durum}[cmd]()
