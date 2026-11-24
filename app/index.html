@@ -297,6 +297,14 @@ button{cursor:pointer}
 .pick button .d{width:10px;height:10px;border-radius:50%;background:var(--hc)}
 .feat{display:flex;flex-direction:column;gap:2px;padding-top:10px;border-top:1px solid var(--line)}
 .feat b{font-size:15px}.feat span{font-size:13px;color:var(--muted);line-height:1.45}
+.hk{background:var(--card);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow);border:2px solid #E8364F33}
+.hk.on{flex-direction:row;align-items:center;gap:12px;padding:12px 14px}
+.hk-ico{width:42px;height:42px;border-radius:12px;flex:none;display:grid;place-items:center;background:#fff;color:#E8364F;box-shadow:0 0 0 1px #E8364F33}
+.hk-ico svg{width:26px;height:26px}.hk-ico.sm{width:34px;height:34px;border-radius:10px}.hk-ico.sm svg{width:20px;height:20px}
+.hk-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.hk-t b{font-size:16px}.hk-t span{font-size:13px;color:var(--muted)}
+.hk-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);line-height:1.4}.hk-list b{color:var(--fg)}
+.hk-badge{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;background:var(--card);color:#E8364F;font-size:12px;font-weight:700;padding:4px 10px 4px 7px;border-radius:99px;box-shadow:0 0 0 1px #E8364F40}
+.hk-badge svg{width:14px;height:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -324,6 +332,7 @@ const ICON={
  flame:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3.5 5 5.5 5 10.5A5 5 0 0 1 7 13c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6.5 1-9.5z"/></svg>',
  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>',
  tree:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 22v-6.2C7 15.4 4.5 13 4.5 9.8a7.5 7.5 0 0 1 15 0c0 3.2-2.5 5.6-6.5 6V22z"/></svg>',
+ heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.4C1 8.3 3 4.5 6.8 4.5c2.1 0 3.6 1.1 4.5 2.6.9-1.5 2.4-2.6 4.5-2.6 3.8 0 5.8 3.8 4.4 7.1C19.5 16.4 12 21 12 21z"/></svg>',
  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
  gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="9" width="18" height="5" rx="1"/><path d="M5 14v7h14v-7M12 9v12M12 9c-2-4-6-4-6-1.5S10 9 12 9zm0 0c2-4 6-4 6-1.5S14 9 12 9z"/></svg>',
@@ -572,6 +581,7 @@ function today(){
   out+=dayNav(k);
   if(!td)out+=`<div class="pastbar"><span>${dayName(k)} için kayıt düzeltiyorsun. Unuttuğun şeyleri ekleyebilirsin.</span><button class="link" data-act="day:0">Bugüne dön</button></div>`;
   else out+=questCard();
+  if(td)out+=healthCard();
   out+=`<div class="sum">${rings(k)}<div class="legend">${legend}</div></div>`;
   S.habits.forEach(h=>out+=h.type==='time'?timerCard(h,k):h.type==='check'?checkCard(h,k):countCard(h,k));
   out+=`<button class="addrow" data-act="new">+ Yeni hedef ekle</button>`;
@@ -583,6 +593,15 @@ function head(h,k,sub){const s=streak(h),done=pct(k,h)>=1;
   return `<div class="row"><div class="ico">${icoOf(h)}</div>
   <div class="title"><h2>${esc(h.name)}</h2><p>${sub}</p></div>
   ${s?`<span class="streak" title="${s} gün seri">${ICON.flame}${s}</span>`:''}${done?`<span class="check-badge">${ICON.check}</span>`:''}</div>`}
+function healthCard(){
+  if(!NATIVE)return '';
+  const wh=waterHabit(),sh=stepHabits();
+  if(S.health)return `<section class="hk on"><div class="hk-ico">${ICON.heart}</div><div class="hk-t"><b>Apple Sağlık bağlı</b><span>${wh?'Su bardakların Sağlık’a yazılıyor':''}${wh&&sh.length?' · ':''}${sh.length?'Adımların Sağlık’tan okunuyor':''}${!wh&&!sh.length?'Su ya da adım hedefi ekleyince Sağlık ile eşitlenir':''}</span></div><button class="chip" data-act="tab:set">Ayarlar</button></section>`;
+  if(S.healthHide)return '';
+  return `<section class="hk"><div class="row"><div class="hk-ico">${ICON.heart}</div><div class="hk-t"><b>Apple Sağlık ile bağla</b><span>İsteğe bağlı</span></div></div>
+   <ul class="hk-list"><li><b>Yazar:</b> eklediğin her bardak suyu (250 ml) Sağlık uygulamasına “Su” olarak kaydeder.</li><li><b>Okur:</b> bugünkü adım sayını, “adım” birimli hedefini kendiliğinden doldurmak için.</li><li>Veriler telefonundan çıkmaz. İzni istediğin zaman Ayarlar › Sağlık’tan kapatabilirsin.</li></ul>
+   <div class="btns"><button class="btn" style="--hc:#E8364F" data-act="healthtog">Apple Sağlık’a bağlan</button><button class="btn ghost" data-act="hkhide">Şimdi değil</button></div></section>`;
+}
 function countCard(h,k){
   const v=val(k,h),p=pct(k,h),u=esc(h.unit||'');
   let body;
@@ -594,7 +613,8 @@ function countCard(h,k){
     body=`<div class="row" style="justify-content:space-between"><div class="big">${fmtN(v)}<small>/ ${fmtN(h.target)} ${u}</small></div><span class="done-tag">${p>=1?'Tamam!':fmtN(Math.max(0,h.target-v))+' kaldı'}</span></div>
     <div class="btns"><button class="btn" data-act="inc:${h.id}">+ ${fmtN(st)}</button><button class="btn ghost" data-act="dec:${h.id}">− ${fmtN(st)}</button></div>`;
   }
-  return shell(h,k,head(h,k,p>=1?'Hedef tamam, harika!':`${fmtN(v)} / ${fmtN(h.target)} ${u}`)+body);
+  const wh=waterHabit(),hk=NATIVE&&S.health&&((wh&&wh.id===h.id)?'Apple Sağlık’a kaydediliyor':stepHabits().some(x=>x.id===h.id)?'Apple Sağlık’tan otomatik':'');
+  return shell(h,k,head(h,k,p>=1?'Hedef tamam, harika!':`${fmtN(v)} / ${fmtN(h.target)} ${u}`)+(hk?`<span class="hk-badge">${ICON.heart}${hk}</span>`:'')+body);
 }
 function checkCard(h,k){
   const v=val(k,h);
@@ -678,8 +698,9 @@ function settings(){
     <button class="chip" data-act="evtog" style="${S.evening.on?'background:var(--leaf);color:#fff':''}">${S.evening.on?'Açık':'Kapalı'}</button></div>
    ${notifState==='denied'?'<p class="note">Bildirim izni kapalı. Açmak için: iPhone Ayarları › Günlük Düzen › Bildirimler.</p>':''}</section>
   ${NATIVE?`<section class="panel"><div class="title"><h2>iPhone özellikleri</h2><p>Uygulamayı açmadan da ilerle</p></div>
-   <div class="set" style="border:0;padding:0"><div class="set-name"><b>Apple Sağlık</b><small>Her bardak su Sağlık'a kaydedilir, “adım” birimli hedefler Sağlık'tan otomatik dolar</small></div>
+   <div class="set" style="border:0;padding:0"><div class="hk-ico sm">${ICON.heart}</div><div class="set-name"><b>Apple Sağlık (HealthKit)</b><small>Her bardak su Sağlık'a kaydedilir, “adım” birimli hedefler Sağlık'tan otomatik dolar</small></div>
     <button class="chip" data-act="healthtog" style="${S.health?'background:var(--leaf);color:#fff':''}">${S.health?'Açık':'Kapalı'}</button></div>
+   <div class="feat"><b>Apple Sağlık ne yapar?</b><span>Yazar: su (her bardak 250 ml). Okur: günlük adım sayısı. Başka hiçbir Sağlık verisine erişmez, veriler telefondan çıkmaz. İzni iPhone Ayarları › Sağlık › Veri Erişimi › Günlük Düzen’den yönetebilirsin.</span></div>
    <div class="feat"><b>Ana ekran widget'ı</b><span>Ana ekranda boş bir yere basılı tut › sol üstte <b>+</b> › <b>Günlük Düzen</b>. Ağacını görür, widget'taki damla ile uygulamayı açmadan su eklersin. Kilit ekranına da eklenebilir.</span></div>
    <div class="feat"><b>Kilit ekranında sayaç</b><span>Kitap ya da ders sayacı çalışırken kalan süre kilit ekranında ve Dynamic Island'da görünür.</span></div>
    <div class="feat"><b>Siri</b><span>“<b>Günlük Düzen su ekle</b>” de, bardağın eklensin. Kestirmeler uygulamasında da var.</span></div></section>`:''}
@@ -739,7 +760,7 @@ function renderIntro(){
     <div><i>1</i><span><b>Hedeflerini seç.</b> Su, kitap, ders ya da kendi koyduğun her şey.</span></div>
     <div><i>2</i><span><b>Yaptıkça işaretle.</b> Her adım XP kazandırır, her gün yeni bir görev seni bekler.</span></div>
     <div><i>3</i><span><b>Ağacını büyüt.</b> XP ile ağaç büyür, bitirdiğin hedefler bahçede çiçek açar.</span></div>
-    ${NATIVE?'<div><i>4</i><span><b>Ana ekrana taşı.</b> Widget ile ağacın hep gözünün önünde, Siri ile “su ekle” demen yeter.</span></div>':''}</div>
+    ${NATIVE?'<div><i>4</i><span><b>iPhone ile bütünleş.</b> Widget ile ağacın ana ekranında, Apple Sağlık ile su ve adımların eşitlenir, Siri ile “su ekle” demen yeter.</span></div>':''}</div>
    <div class="field"><label for="u-name">Sana nasıl hitap edelim?</label><input class="inp" id="u-name" maxlength="20" placeholder="Adın (isteğe bağlı)" value="${esc(S.name||'')}" autocomplete="given-name"></div>
    <div class="field"><label>Hangi hedeflerle başlamak istersin?</label><div class="pick">
     ${opts.map(o=>`<button class="${PICK.has(o.k)?'on':''}" style="--hc:var(--${o.color});--hs:var(--${o.color}-soft)" data-act="pick:${o.k}"><span class="d"></span>${o.name}</button>`).join('')}</div>
@@ -952,6 +973,8 @@ document.addEventListener('click',e=>{
   if(a==='fup'||a==='fdn'){const st=F.type==='time'?5:F.target>=1000?500:F.target>=100?10:F.target>=20?5:1;F.target=Math.max(F.type==='time'?5:1,Math.min(F.type==='time'?480:1000000,F.target+(a==='fup'?st:-st)));renderSheet();return}
   if(a==='fc'){F.color=arg;renderSheet();return}
   if(a==='remclr'){F.remind='';renderSheet();return}
+  if(a==='hkhide'){S.healthHide=true;save();render();return}
+  if(a==='tab'){S.tab=arg;save();render();scrollTo(0,0);return}
   if(a==='healthtog'){if(S.health){S.health=false;save();render();return}
     const b=plug('Bahce');if(!b)return;b.healthAuth().then(r=>{S.health=!!(r&&r.ok);save();render();if(S.health){toast('Apple Sağlık bağlandı');healthStepsSync()}else toast('Sağlık izni verilmedi')}).catch(()=>{});return}
   if(a==='evtog'){S.evening.on=!S.evening.on;if(S.evening.on)notifPerm(true).then(()=>render());save();render();return}
