@@ -368,6 +368,26 @@ def tfgrup():
             "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": grp["id"]}]}}}})
         step(f"Testçi eklendi: {a.get('firstName','')} {a.get('lastName','')}", st in (200, 201), r)
 
+def cinkaldir():
+    app_id = need_app()
+    st, r = api("GET", f"/v1/apps/{app_id}/appAvailabilityV2")
+    if st != 200 or not r.get("data"): die("Ülke ayarı okunamadı", r)
+    aid = r["data"]["id"]
+    url = f"/v2/appAvailabilities/{aid}/territoryAvailabilities?include=territory&limit=200"
+    found = False
+    while url:
+        st, r = api("GET", url)
+        for t in r.get("data", []):
+            tid = t.get("relationships", {}).get("territory", {}).get("data", {}).get("id")
+            if tid == "CHN":
+                found = True
+                if not t["attributes"].get("available"):
+                    print("  ✓ Çin anakarası zaten kapalı"); return
+                st2, r2 = api("PATCH", f"/v1/territoryAvailabilities/{t['id']}", {"data": {"type": "territoryAvailabilities", "id": t["id"], "attributes": {"available": False}}})
+                step("Çin anakarası satıştan çıkarıldı", st2 == 200, r2); return
+        url = r.get("links", {}).get("next")
+    if not found: print("  Çin listede bulunamadı")
+
 def durum():
     a = find_app()
     if not a: print("Uygulama App Store Connect'te yok."); return
@@ -391,4 +411,4 @@ if __name__ == "__main__":
         print("      ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 ve IOS_TEAM_ID ekle (Miras FC'deki değerlerin aynısı).")
         sys.exit(1)
     cmd = sys.argv[1] if len(sys.argv) > 1 else "durum"
-    {"tfgrup": tfgrup, "hazirlik": hazirlik, "bilgiler": bilgiler, "gonder": gonder, "durum": durum}[cmd]()
+    {"cinkaldir": cinkaldir, "tfgrup": tfgrup, "hazirlik": hazirlik, "bilgiler": bilgiler, "gonder": gonder, "durum": durum}[cmd]()
